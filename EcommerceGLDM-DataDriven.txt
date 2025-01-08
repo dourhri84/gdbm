@@ -37,6 +37,11 @@ NodeLabel Category{
  cname String
  vatRate Float
 }
+NodeLabel Contains{
+ orderedQty Integer
+ unitPrice Float
+ discountRate Float
+}
 NodeLabel CreditCard{
  card_number Integer isUnique
  expireDate Date
@@ -71,15 +76,22 @@ RelType Referral{
  Roles referrer,referred
  Cardinality <0-n>,<0-1>
 }
-RelType Contains{
- NodeLabel Order,Seller,Product
- Cardinality <0-n>,<1-n>,<1-n>
- Property orderedQty Integer,unitPrice Float,discountRate Float
-}
 RelType Provides{
  NodeLabel Seller,Product
  Cardinality <1-n>,<1-n>
  Property inStockQty Integer,warranty Integer
+}
+RelType Contains_Order{
+ NodeLabel Contains,Order
+ Cardinality <?-?>,<1-n>
+}
+RelType Contains_Product{
+ NodeLabel Contains,Product
+ Cardinality <?-?>,<1-n>
+}
+RelType Contains_Seller{
+ NodeLabel Contains,Seller
+ Cardinality <?-?>,<1-n>
 }
 RelType pays{
  NodeLabel Client,Order
@@ -89,9 +101,13 @@ RelType makes{
  NodeLabel Client,Order
  Cardinality <1-1>,<0-n>
 }
-RelType Concerns{
- NodeLabel Payment,BankCard
- Cardinality <0-n>,<1-1>
+RelType Concerns1{
+ NodeLabel Payment,DebitCard
+ Cardinality <0-n>,<0-1>
+}
+RelType Concerns2{
+ NodeLabel Payment,CreditCard
+ Cardinality <0-n>,<0-1>
 }
 RelType uses{
  NodeLabel Payment,RemoteAccess
