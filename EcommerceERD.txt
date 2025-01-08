@@ -1,0 +1,111 @@
+Entity Client{
+ login String
+ password String
+ phone Integer
+ creationDate Datetime
+}
+Entity Person extends Client{
+ firstName String
+ lastName String
+}
+Entity Company extends Client{
+ name String
+ gov_id String
+}
+Entity Address{
+ addr_id String
+ road String
+ district String
+ town String
+ zipcode Integer
+}
+Entity Order{
+ oid Integer
+ odatetime Datetime
+ shippingFee Float
+ total Float
+ sequenceNumber Integer
+}
+Entity Product{
+ reference String
+ designation String
+ description String
+}
+Entity Seller{
+ seller_gov_id Integer
+ companyName String
+}
+Entity Category{
+ code String
+ cname String
+ vatRate Float
+}
+Entity BankCard{
+ card_number Integer
+ expireDate Date
+ cvc Integer
+ status Boolean
+ bank String
+}
+Entity CreditCard extends BankCard{
+ interestRate Float
+ limit Float
+}
+Entity DebitCard extends BankCard{
+ balance Float
+ label String
+}
+Entity Payment{
+ pm_number Integer
+ pm_datetime Datetime
+}
+Entity RemoteAccess{
+ idAccess Integer
+ timeAccess Datetime
+ ip String
+ webBrowser String
+ OSNameVersion String
+}
+Association Referral{
+ Entity Client
+ Roles referrer,referred
+ Cardinality <0-n>,<0-1>
+}
+Association Contains{
+ Entity Order,Seller,Product
+ Cardinality <0-n>,<1-n>,<1-n>
+ Attribute orderedQty Integer,unitPrice Float,discountRate Float
+}
+Association Provides{
+ Entity Seller,Product
+ Cardinality <1-n>,<1-n>
+ Attribute inStockQty Integer,warranty Integer
+}
+Association pays{
+ Entity Client,Order
+ Cardinality <1-1>,<0-n>
+}
+Association makes{
+ Entity Client,Order
+ Cardinality <1-1>,<0-n>
+}
+Association Concerns{
+ Entity Payment,BankCard
+ Cardinality <0-n>,<1-1>
+}
+Association uses{
+ Entity Payment,RemoteAccess
+ Cardinality <0-1>,<1-1>
+}
+Aggregation{
+ Entity Client,Address
+ Cardinality <1-1>
+}
+Composition{
+ Entity Order,Payment
+ Cardinality <0-1>
+}
+Composition{
+Entity Product,Category
+Cardinality <1-n>
+}
