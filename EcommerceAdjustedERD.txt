@@ -37,6 +37,11 @@ Entity Category{
  cname String
  vatRate Float
 }
+Entity Contains{
+ orderedQty Integer
+ unitPrice Float
+ discountRate Float
+}
 Entity CreditCard{
  card_number Integer isUnique
  expireDate Date
@@ -71,15 +76,22 @@ Association Referral{
  Roles referrer,referred
  Cardinality <0-n>,<0-1>
 }
-Association Contains{
- Entity Order,Seller,Product
- Cardinality <0-n>,<1-n>,<1-n>
- Attribute orderedQty Integer,unitPrice Float,discountRate Float
-}
 Association Provides{
  Entity Seller,Product
  Cardinality <1-n>,<1-n>
  Attribute inStockQty Integer,warranty Integer
+}
+Association Contains_Order{
+ Entity Contains,Order
+ Cardinality <?-?>,<1-n>
+}
+Association Contains_Product{
+ Entity Contains,Product
+ Cardinality <?-?>,<1-n>
+}
+Association Contains_Seller{
+ Entity Contains,Seller
+ Cardinality <?-?>,<1-n>
 }
 Association pays{
  Entity Client,Order
@@ -89,9 +101,13 @@ Association makes{
  Entity Client,Order
  Cardinality <1-1>,<0-n>
 }
-Association Concerns{
- Entity Payment,BankCard
- Cardinality <0-n>,<1-1>
+Association Concerns1{
+ Entity Payment,DebitCard
+ Cardinality <0-n>,<0-1>
+}
+Association Concerns2{
+ Entity Payment,CreditCard
+ Cardinality <0-n>,<0-1>
 }
 Association uses{
  Entity Payment,RemoteAccess
