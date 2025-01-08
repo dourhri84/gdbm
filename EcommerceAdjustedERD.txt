@@ -1,0 +1,111 @@
+Entity Client{
+ login String isUnique
+ password String
+ phone Integer
+ creationDate Datetime
+ firstName String
+ lastName String
+ name String
+ gov_id String
+ type String
+}
+Entity Address{
+ addr_id String isUnique
+ road String
+ district String
+ town String
+ zipcode Integer
+}
+Entity Order{
+ oid Integer isUnique
+ odatetime Datetime
+ shippingFee Float
+ total Float
+ sequenceNumber Integer
+}
+Entity Product{
+ reference String isUnique
+ designation String
+ description String
+}
+Entity Seller{
+ seller_gov_id Integer isUnique
+ companyName String
+}
+Entity Category{
+ code String isUnique
+ cname String
+ vatRate Float
+}
+Entity CreditCard{
+ card_number Integer isUnique
+ expireDate Date
+ cvc Integer
+ status Boolean
+ bank String
+ interestRate Float
+ limit Float
+}
+Entity DebitCard{
+ card_number Integer isUnique
+ expireDate Date
+ cvc Integer
+ status Boolean
+ bank String
+ balance Float
+ label String
+}
+Entity Payment{
+ pm_number Integer
+ pm_datetime Datetime
+}
+Entity RemoteAccess{
+ idAccess Integer
+ timeAccess Datetime
+ ip String
+ webBrowser String
+ OSNameVersion String
+}
+Association Referral{
+ Entity Client
+ Roles referrer,referred
+ Cardinality <0-n>,<0-1>
+}
+Association Contains{
+ Entity Order,Seller,Product
+ Cardinality <0-n>,<1-n>,<1-n>
+ Attribute orderedQty Integer,unitPrice Float,discountRate Float
+}
+Association Provides{
+ Entity Seller,Product
+ Cardinality <1-n>,<1-n>
+ Attribute inStockQty Integer,warranty Integer
+}
+Association pays{
+ Entity Client,Order
+ Cardinality <1-1>,<0-n>
+}
+Association makes{
+ Entity Client,Order
+ Cardinality <1-1>,<0-n>
+}
+Association Concerns{
+ Entity Payment,BankCard
+ Cardinality <0-n>,<1-1>
+}
+Association uses{
+ Entity Payment,RemoteAccess
+ Cardinality <0-1>,<1-1>
+}
+Association has{
+ Entity Client,Address
+ Cardinality <0-n>,<1-1>
+}
+Association is_composed_of{
+Entity Product,Category
+Cardinality <1-n>,<1-1>
+}
+Association is_composed_of2{
+ Entity Order,Payment
+ Cardinality <1-1>,<0-1>
+}
