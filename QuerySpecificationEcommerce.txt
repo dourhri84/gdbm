@@ -1,7 +1,7 @@
 Q1: Orders in which a client is involved in any role (making and/or payment).
 QUERY Q1_OrdersOfClient AS
 MATCH (c:Client)-[?:?]-(O:Order)
-WHERE login=parameter
+WHERE c.login=parameter
 RETURN O.all;
 -------------------------------------
 Q2: Products of a seller, in which the warranty exceeds six months.
