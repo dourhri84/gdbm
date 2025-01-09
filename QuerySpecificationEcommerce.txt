@@ -7,7 +7,7 @@ RETURN O.all;
 Q2: Products of a seller, in which the warranty exceeds six months.
 QUERY Q2_ProductsOfSellerWithWarranty AS
 MATCH (p:Product)-[pvd:Provides]-(S:Seller)
-WHERE seller_gov_id=parameter
+WHERE S.seller_gov_id=parameter
 RETURN pvd.warranty>6;
 -------------------------------------
 Q3: Company-type clients making orders in a given date.
