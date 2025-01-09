@@ -17,7 +17,7 @@ WHERE c.type="company" and o.odatetime=parameter
 RETURN c.all
 -------------------------------------
 Q4: From a given order of a client, retrieve the next order.
-UERY Q4_nextOrderOfClient AS
+QUERY Q4_nextOrderOfClient AS
 MATCH (C1:Client)-[m:makes]-(O1:Order)
 WITH (C2:Client)-[m:makes]-(O2:Order)
 WHERE C1.login=parameter1 and C2.login=C1.login and 
