@@ -123,14 +123,13 @@ RelType has{
  Cardinality <0-n>,<1-1>
 }
 RelType is_composed_of{
-NodeLabel Product,Category
-Cardinality <1-n>,<1-1>
+NodeLabel Category,Product
+Cardinality <1-1>,<1-n>
 }
 RelType is_composed_of2{
  NodeLabel Order,Payment
  Cardinality <1-1>,<0-1>
 }
-
 RelType typeOfClient{
  NodeLabel Client,Type
  Cardinality <0-n>,<1-1>
