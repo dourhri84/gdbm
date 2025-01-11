@@ -118,8 +118,8 @@ Association has{
  Cardinality <0-n>,<1-1>
 }
 Association is_composed_of{
-Entity Product,Category
-Cardinality <1-n>,<1-1>
+Entity Category,Product
+Cardinality <1-1>,<1-n>
 }
 Association is_composed_of2{
  Entity Order,Payment
