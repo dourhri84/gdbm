@@ -39,13 +39,13 @@ RETURN dc.all;
 Q7: List of "Master" cards used in a given date.
 QUERY Q7_MasterCardUsedInADate AS
 MATCH (dc:DebitCard)-[cnc:concern1]-(p:Payment)
-WHERE dc.labe="Master" and p.pm_datetime=parameter
+WHERE dc.label="Master" and p.pm_datetime=parameter
 RETURN dc.all;
 -------------------------------------
 Q8: List of "Visa" cards from a given bank.
 QUERY Q8_VisaCardGivenBank AS
 MATCH (dc:DebitCard)
-WHERE dc.labe="Visa" and dc.bank=parameter
+WHERE dc.label="Visa" and dc.bank=parameter
 RETURN dc.all;
 -------------------------------------
 Q9: Clients of a given town.
@@ -57,7 +57,7 @@ RETURN c.all;
 Q10: Orders of a specific client in a given date with shipping fees are from 100 to 10000.
 QUERY Q10_OrdersClientLimitedShippingFees AS
 MATCH (c:Client)-[m:makes]-(o:order)
-WHERE c.login=parameter1 and o.odatetime=parameter2
+WHERE c.login=parameter1 and o.odatetime=parameter2 and shippingFee>=100 and shippingFee<=10000
 RETURN o.all;
 -------------------------------------
 Q11: Modify the VAT Rate of a given category.
@@ -70,11 +70,11 @@ Q12: Change the status of a given banking card.
 QUERY Q12_UpdateStatusDebitCard AS
 MATCH (cc:CreditCard)
 WHERE cc.card_number=parameter
-SET cc.status = "enabled"
+SET cc.status = newValue
 UNON
 MATCH (dc:DebitCard)
 WHERE dc.card_number=parameter
-SET dc.status = "enabled";
+SET dc.status = newValue;
 -------------------------------------
 Q13: Change the warranty duration offered by a seller for a product.
 QUERY Q13_UpdateWarrantyForProductBySeller AS
@@ -86,15 +86,15 @@ Q14: Update the phone number of a client.
 QUERY Q14_UpdatePhoneClient AS
 MATCH (c:Client)
 WHERE c.login=parameter
-SET c.phone=new Value;
+SET c.phone=newValue;
 -------------------------------------
-Q15: Delete a product from the catalogue
+Q15: Delete a product from the catalog
 QUERY Q15_deleteProduct AS
 MATCH (p:Product)-[pvd:Provides]-(s:Seller)
 WHERE p.reference=parameter1 and s.seller_gov_id=parameter2
 DELETE p;
 -------------------------------------
-Q16: Remove orders placed prior to 2014
+Q16: Remove orders made before to 2014
 QUERY Q16_deleteOldOrders AS
 MATCH (o:Order)
 WHERE o.odatetime<"2014"
