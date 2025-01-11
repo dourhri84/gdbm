@@ -106,6 +106,6 @@ Composition{
  Cardinality <0-1>
 }
 Composition{
-Entity Product,Category
+Entity Category,Product
 Cardinality <1-n>
 }
