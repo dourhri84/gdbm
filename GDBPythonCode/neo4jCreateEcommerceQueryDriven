@@ -6,7 +6,7 @@ import time as tm
 # Connection details
 uri = "bolt://localhost:7687"
 username = "neo4j"
-password = "Dourhri_84"
+password = "neo4j1234"
 
 # Database name
 db_base = "ecommerceQueryDriven"
