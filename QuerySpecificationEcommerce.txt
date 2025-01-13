@@ -36,7 +36,7 @@ MATCH (dc:DebitCard)
 WHERE dc.label="Master"
 RETURN dc.all;
 -------------------------------------
-Q7: List of "Master" cards used in a given date.
+Q7: List of "Master" cards used in a given date, sorted by descending chronological order of payment time.
 QUERY Q7_MasterCardUsedInADate AS
 MATCH (dc:DebitCard)-[cnc:concern1]-(p:Payment)
 WHERE dc.label="Master" and p.pm_datetime=parameter
