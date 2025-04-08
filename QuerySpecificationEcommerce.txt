@@ -61,12 +61,14 @@ WHERE c.login=parameter1 and o.odatetime=parameter2 and shippingFee>=100 and shi
 RETURN o.all;
 -------------------------------------
 Q11:  Clients Using the Same Credit Card
+QUERY Q11_clientsSameCreditCard AS
 MATCH (c1:Client)-[:pays]->(:Order)-[:is_composed_of]->(:Payment)-[:concern2]->(cc:CreditCard),
       (c2:Client)-[:pays]->(:Order)-[:is_composed_of]->(:Payment)-[:concern2]->(cc)
 WHERE c1.login <> c2.login
 RETURN c1.login, c2.login, cc.card_number;
 -------------------------------------
 Q12: List of clients accessed the system from the same IP. List sorted by ascending order of IP address.
+QUERY Q12_ClientsFromSameIP AS
 MATCH (c1:Client)-[:makes]->(:Order)-[:is_composed_of]->(:Payment)-[:uses]->(ra:RemoteAccess),
       (c2:Client)-[:makes]->(:Order)-[:is_composed_of]->(:Payment)-[:uses]->(ra)
 WHERE c1.login <> c2.login
@@ -74,19 +76,20 @@ RETURN c1.login, c2.login, ra.ip
 ORDER BY ra.ip ASC;
 -------------------------------------
 Q13: Orders paid with credit cards owned by other clients.
+QUERY Q13_OrdersMadeByC1PaidByC2 AS
 MATCH (buyer:Client)-[:makes]->(o:Order)-[:is_composed_of]->(p:Payment)-[:concern2]->(cc:CreditCard),
       (owner:Client)-[:pays]->(:Order)-[:is_composed_of]->(:Payment)-[:concern2]->(cc)
 WHERE buyer.login <> owner.login
 RETURN buyer.login, owner.login, cc.card_number, o.oid;
 -------------------------------------
 Q14: Modify the VAT Rate of a given category.
-QUERY Q11_UpdateVatRate AS
+QUERY Q14_UpdateVatRate AS
 MATCH (ctg:Category)
 WHERE ctg.code=parameter
 SET ctg.VatRate = newValue;
 -------------------------------------
 Q15: Change the status of a given banking card.
-QUERY Q12_UpdateStatusDebitCard AS
+QUERY Q15_UpdateStatusDebitCard AS
 MATCH (cc:CreditCard)
 WHERE cc.card_number=parameter
 SET cc.status = newValue
@@ -96,25 +99,25 @@ WHERE dc.card_number=parameter
 SET dc.status = newValue;
 -------------------------------------
 Q16: Change the warranty duration offered by a seller for a product.
-QUERY Q13_UpdateWarrantyForProductBySeller AS
+QUERY Q16_UpdateWarrantyForProductBySeller AS
 MATCH (p:Product)-[pvd:Provides]-(s:Seller)
 WHERE p.reference=parameter1 and s.seller_gov_id=parameter2
 SET pvd.warranty = newValue;
 -------------------------------------
 Q17: Update the phone number of a client.
-QUERY Q14_UpdatePhoneClient AS
+QUERY Q17_UpdatePhoneClient AS
 MATCH (c:Client)
 WHERE c.login=parameter
 SET c.phone=newValue;
 -------------------------------------
 Q18: Delete a product from the catalog
-QUERY Q15_deleteProduct AS
+QUERY Q18_deleteProduct AS
 MATCH (p:Product)-[pvd:Provides]-(s:Seller)
 WHERE p.reference=parameter1 and s.seller_gov_id=parameter2
 DELETE p;
 -------------------------------------
 Q19: Remove orders made before to 2014
-QUERY Q16_deleteOldOrders AS
+QUERY Q19_deleteOldOrders AS
 MATCH (o:Order)
 WHERE o.odatetime<"2014"
 DELETE o;
