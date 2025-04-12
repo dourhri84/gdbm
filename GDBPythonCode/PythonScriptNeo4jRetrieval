@@ -1,1 +1,64 @@
 
+from neo4j import GraphDatabase
+import time
+
+# Connection details
+uri = "bolt://localhost:7687"
+username = "neo4j"
+password = "neo4j1234"
+driver = GraphDatabase.driver(uri, auth=(username, password))
+
+# Database names
+databases = {
+    "Base": "ecommercebase",
+    "Indexed": "ecommerceindexed",
+    "Query-Driven": "QueryDrivenEcommerce",
+    "Indexed + Query-Driven": "IndexedQueryDrivenEcommerce"
+}
+
+# First 5 queries written in Cypher
+queries = {
+    "Q1": """
+    MATCH (c:Client)-[r]-(o:Order)
+    WHERE c.login = 'client_100000'
+    RETURN o
+    """,
+
+    "Q2": """
+    MATCH (p:Product)<-[pvd:Provides]-(s:Seller)
+    WHERE s.seller_gov_id = 'gov_10000' AND pvd.warranty > 6
+    RETURN p
+    """,
+
+    "Q3": """
+    MATCH (c:Client)-[:makes]->(o:Order)
+    WHERE c.type = 'company' AND o.odatetime = '2022-01-01'
+    RETURN c
+    """,
+
+    "Q4": """
+    MATCH (c1:Client)-[:makes]->(o1:Order),
+          (c2:Client)-[:makes]->(o2:Order)
+    WHERE c1.login = 'client_100000'
+      AND c2.login = c1.login
+      AND o1.sequenceNumber = 2
+      AND o2.sequenceNumber = o1.sequenceNumber + 1
+    RETURN o2
+    """,
+
+    "Q5": """
+    MATCH (c:Client {login: 'client_10000'})-[:makes]->(:Order)<-[:containsOrder]-(cnt:Contains)-[:containsProduct]->(p:Product)-[:is_composed_of]->(ct:Category)
+    RETURN ct.code, ct.cname
+    """
+}
+
+# Run the queries on all 4 databases and measure execution time
+with driver:
+    for qname, cypher in queries.items():
+        print(f"\n===== Execution Time for {qname} =====")
+        for label, dbname in databases.items():
+            with driver.session(database=dbname) as session:
+                start = time.time()
+                session.run(cypher)
+                end = time.time()
+                print(f"{label}: {end - start} seconds")
