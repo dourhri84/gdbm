@@ -1,0 +1,157 @@
+NodeLabel Client{
+ login String isUnique
+ password String
+ phone Integer
+ creationDate Datetime
+ firstName String
+ lastName String
+ name String
+ gov_id String
+}
+NodeLabel Type{
+ type String
+}
+NodeLabel Address{
+ addr_id String isUnique
+ road String
+ district String
+ town String
+ zipcode Integer
+}
+NodeLabel Order{
+ oid Integer isUnique
+ odatetime Datetime
+ shippingFee Float
+ total Float
+ sequenceNumber Integer
+}
+NodeLabel Product{
+ reference String isUnique
+ designation String
+ description String
+}
+NodeLabel Seller{
+ seller_gov_id Integer isUnique
+ companyName String
+}
+NodeLabel Category{
+ code String isUnique
+ cname String
+ vatRate Float
+}
+NodeLabel Contains{
+ orderedQty Integer
+ unitPrice Float
+ discountRate Float
+}
+NodeLabel Warranty{
+ warranty Integer
+}
+NodeLabel CreditCard{
+ card_number Integer isUnique
+ expireDate Date
+ cvc Integer
+ status Boolean
+ bank String
+ interestRate Float
+ limit Float
+}
+NodeLabel DebitCard{
+ card_number Integer isUnique
+ expireDate Date
+ cvc Integer
+ status Boolean
+ bank String
+ balance Float
+ label String
+}
+NodeLabel Payment{
+ pm_number Integer
+ pm_datetime Datetime
+}
+NodeLabel RemoteAccess{
+ idAccess Integer
+ timeAccess Datetime
+ ip String
+ webBrowser String
+ OSNameVersion String
+}
+RelType Referral{
+ NodeLabel Client
+ Roles referrer,referred
+ Cardinality <0-n>,<0-1>
+}
+RelType Provides{
+ NodeLabel Seller,Product
+ Cardinality <1-n>,<1-n>
+ Property inStockQty Integer,warranty Integer
+}
+RelType Contains_Order{
+ NodeLabel Contains,Order
+ Cardinality <?-?>,<1-n>
+}
+RelType Contains_Product{
+ NodeLabel Contains,Product
+ Cardinality <?-?>,<1-n>
+}
+RelType Contains_Seller{
+ NodeLabel Contains,Seller
+ Cardinality <?-?>,<1-n>
+}
+RelType pays{
+ NodeLabel Client,Order
+ Cardinality <1-1>,<0-n>
+}
+RelType makes{
+ NodeLabel Client,Order
+ Cardinality <1-1>,<0-n>
+}
+RelType Concerns1{
+ NodeLabel Payment,DebitCard
+ Cardinality <0-n>,<0-1>
+}
+RelType Concerns2{
+ NodeLabel Payment,CreditCard
+ Cardinality <0-n>,<0-1>
+}
+RelType uses{
+ NodeLabel Payment,RemoteAccess
+ Cardinality <0-1>,<1-1>
+}
+RelType has{
+ NodeLabel Client,Address
+ Cardinality <0-n>,<1-1>
+}
+RelType is_composed_of{
+NodeLabel Category,Product
+Cardinality <1-1>,<1-n>
+}
+RelType is_composed_of2{
+ NodeLabel Order,Payment
+ Cardinality <1-1>,<0-1>
+}
+RelType typeOfClient{
+ NodeLabel Client,Type
+ Cardinality <0-n>,<1-1>
+}
+RelType Participates{
+ NodeLabel Client,Order
+ Cardinality <1-2>,<0-n>
+}
+RelType Next{
+ NodeLabel Client
+ Roles next,previous
+ Cardinality <0-1>,<0-1>
+}
+RelType CategoriesPurchasedByClient{
+ NodeLabel Client,Category
+ Cardinality <?-?>,<?-?>
+}
+RelType warrantySeller{
+ NodeLabel Seller,Warranty
+ Cardinality <1-n>,<?-?>
+}
+RelType warrantyProduct{
+ NodeLabel Product,Warranty
+ Cardinality <1-n>,<?-?>
+}
