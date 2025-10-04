@@ -1,4 +1,3 @@
-
 from neo4j import GraphDatabase
 import time
 
@@ -8,57 +7,61 @@ username = "neo4j"
 password = "neo4j1234"
 driver = GraphDatabase.driver(uri, auth=(username, password))
 
-# Database names
+# Database names and their roles
 databases = {
-    "Base": "ecommercebase",
-    "Indexed": "ecommerceindexed",
-    "Query-Driven": "QueryDrivenEcommerce",
-    "Indexed + Query-Driven": "IndexedQueryDrivenEcommerce"
+    "Basic": "BasicEcommerce",
+    "PG-Schema": "pgGraphEcommerce",
+    "ER-Schema": "erSchemaEcommerce",
+    "Extended-GDBS": "extendedGDBSEcommerce",
+    "GraphDesign": "graphDesignEcommerce"
 }
 
-# First 5 queries written in Cypher
+# Access Queries Q1–Q5 (Cypher)
 queries = {
     "Q1": """
-    MATCH (c:Client)-[r]-(o:Order)
+    MATCH (c:Client)-[:MAKES]->(o:Order)
     WHERE c.login = 'client_100000'
     RETURN o
     """,
 
     "Q2": """
-    MATCH (p:Product)<-[pvd:Provides]-(s:Seller)
-    WHERE s.seller_gov_id = 'gov_10000' AND pvd.warranty > 6
+    MATCH (p:Product)<-[pvd:PROVIDES]-(s:Seller)
+    WHERE s.seller_gov_id = 'gov_1000' AND pvd.warranty > 6
     RETURN p
     """,
 
     "Q3": """
-    MATCH (c:Client)-[:makes]->(o:Order)
-    WHERE c.type = 'company' AND o.odatetime = '2022-01-01'
-    RETURN c
+    MATCH (c:Client)-[:MAKES]->(o:Order)
+    WHERE c.type = 'company' AND o.odatetime STARTS WITH '2022-01-01'
+    RETURN c.login, o.oid
     """,
 
     "Q4": """
-    MATCH (c1:Client)-[:makes]->(o1:Order),
-          (c2:Client)-[:makes]->(o2:Order)
-    WHERE c1.login = 'client_100000'
-      AND c2.login = c1.login
-      AND o1.sequenceNumber = 2
-      AND o2.sequenceNumber = o1.sequenceNumber + 1
-    RETURN o2
+    MATCH (c:Client {login:'client_100000'})-[:MAKES]->(o1:Order),
+          (c)-[:MAKES]->(o2:Order)
+    WHERE o2.sequenceNumber = o1.sequenceNumber + 1
+    RETURN o1.oid AS CurrentOrder, o2.oid AS NextOrder
     """,
 
     "Q5": """
-    MATCH (c:Client {login: 'client_10000'})-[:makes]->(:Order)<-[:containsOrder]-(cnt:Contains)-[:containsProduct]->(p:Product)-[:is_composed_of]->(ct:Category)
-    RETURN ct.code, ct.cname
+    MATCH (c:Client {login:'client_10000'})-[:MAKES]->(:Order)<-[:CONTAINS_Order]-(co:Contains)
+          -[:CONTAINS_Product]->(p:Product)-[:IS_COMPOSED_OF]->(cat:Category)
+    RETURN DISTINCT cat.code, cat.cname
     """
 }
 
-# Run the queries on all 4 databases and measure execution time
+# Execute each query in all databases and measure times
+
 with driver:
     for qname, cypher in queries.items():
-        print(f"\n===== Execution Time for {qname} =====")
+        print(f"----- {qname} -----")
         for label, dbname in databases.items():
             with driver.session(database=dbname) as session:
-                start = time.time()
-                session.run(cypher)
-                end = time.time()
-                print(f"{label}: {end - start} seconds")
+                start_time = time.time()
+                session.run(cypher).consume()  # Consume results to ensure full execution
+                elapsed = round(time.time() - start_time, 4)
+                print(f"{label:<20} : {elapsed} seconds")
+        print()
+
+print("All queries executed successfully across the five databases.")
+driver.close()
