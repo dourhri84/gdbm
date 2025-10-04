@@ -1,127 +1,169 @@
-Class Client{
- login String isUnique
- password String
- phone Integer
- creationDate Datetime
- firstName String
- lastName String
- name String
- gov_id String
- type String
-}
-Class Address{
- addr_id String isUnique
- road String
- district String
- town String
- zipcode Integer
-}
-Class Order{
- oid Integer isUnique
- odatetime Datetime
- shippingFee Float
- total Float
- sequenceNumber Integer
-}
-Class Product{
- reference String isUnique
- designation String
- description String
-}
-Class Seller{
- seller_gov_id Integer isUnique
- companyName String
-}
-Class Category{
- code String isUnique
- cname String
- vatRate Float
-}
-Class Contains{
- orderedQty Integer
- unitPrice Float
- discountRate Float
-}
-Class CreditCard{
- card_number Integer isUnique
- expireDate Date
- cvc Integer
- status Boolean
- bank String
- interestRate Float
- limit Float
-}
-Class DebitCard{
- card_number Integer isUnique
- expireDate Date
- cvc Integer
- status Boolean
- bank String
- balance Float
- label String
-}
-Class Payment{
- pm_number Integer
- pm_datetime Datetime
-}
-Class RemoteAccess{
- idAccess Integer
- timeAccess Datetime
- ip String
- webBrowser String
- OSNameVersion String
-}
-Association Referral{
- Class Client
- Roles referrer,referred
- Multiplicity <0..*>,<0..1>
-}
-Association Provides{
- Class Seller,Product
- Multiplicity <1..*>,<1..*>
- Attribute inStockQty Integer,warranty Integer
-}
-Association Contains_Order{
- Class Contains,Order
- Multiplicity <?-?>,<1..*>
-}
-Association Contains_Product{
- Class Contains,Product
- Multiplicity <?-?>,<1..*>
-}
-Association Contains_Seller{
- Class Contains,Seller
- Multiplicity <?-?>,<1..*>
-}
-Association pays{
- Class Client,Order
- Multiplicity <1..1>,<0..*>
-}
-Association makes{
- Class Client,Order
- Multiplicity <1..1>,<0..*>
-}
-Association Concerns1{
- Class Payment,DebitCard
- Multiplicity <0..*>,<0..1>
-}
-Association Concerns2{
- Class Payment,CreditCard
- Multiplicity <0..*>,<0..1>
-}
-Association uses{
- Class Payment,RemoteAccess
- Multiplicity <0..1>,<1..1>
-}
-Association has{
- Class Client,Address
- Multiplicity <0..*>,<1..1>
-}
-Association is_composed_of{
-Class Category,Product
-Multiplicity <1..1>,<1..*>
-}
-Association is_composed_of2{
- Class Order,Payment
- Multiplicity <1..1>,<0..1>
+acd ecommerce {
+
+  // -------- Classes --------
+
+  class Client  {
+    string login unique;
+    string password;
+    int phone;
+    datetime creationDate;
+    string firstName;
+    string lastName;
+    string name;
+    int gov_id;
+    string type;
+  }
+
+  class Address {
+    string addr_id unique;
+    string road;
+    string district;
+    string town;
+    int zipcode;
+  }
+
+  class Order   {
+    int oid unique;
+    datetime odatetime;
+    float shippingFee;
+    float total;
+    int sequenceNumber;
+  }
+
+  class Payment {
+    int pm_number unique;
+    datetime pm_datetime;
+  }
+
+  class RemoteAccess {
+    int idAccess unique;
+    datetime timeAccess;
+    string ip;
+    string webBrowser;
+    string OSNameVersion;
+  }
+
+  class CreditCard {
+    int card_number unique;
+    date expireDate;
+    int cvc;
+    boolean status;
+    string bank;
+    float interestRate;
+    float limit;
+  }
+
+  class DebitCard {
+    int card_number unique;
+    date expireDate;
+    int cvc;
+    boolean status;
+    string bank;
+    float balance;
+    string label;
+  }
+
+  class Product {
+    string reference unique;
+    string designation;
+    string description;
+  }
+
+  class Category {
+    string code unique;
+    string cname;
+    float vatRate;
+  }
+
+  class Seller {
+    int seller_gov_id unique;
+    string company_name;
+  }
+
+  // -------- Associations --------
+
+  // Client pays Orders (Client [0..1] - Order [0..*])
+  association PAYS binary {
+    Client [0..1],
+    Order [0..*]
+  }
+
+  // Client makes Orders: Client [1] - Order [0..*]
+  association MAKES binary {
+    Client [1],
+    Order [0..*]
+  }
+
+  // RemoteAccess uses Payment: RemoteAccess [1] - Payment [0..1]
+  association USES binary {
+    RemoteAccess [1],
+    Payment [0..1]
+  }
+
+  // Payment concerns1 DebitCard
+  association CONCERNS1 binary {
+    Payment [0..*],
+    DebitCard [0..1]
+  }
+
+  // Payment CONCERNS2 CreditCard
+  association CONCERNS binary {
+    Payment [0..*],
+    CreditCard [0..1]
+  }
+
+
+  // Adjusting of the ternary association "Contains": Order × Product × Seller
+  class CONTAINS {
+    int orderedQty;
+    float unitPrice;
+    float discountRate;
+  }
+
+  association CONTAINS_Order binary {
+    Order [0..*],
+    Contains [-1..-1],
+  } 
+
+  association CONTAINS_Product binary {
+    Product [1..*],
+    Contains [-1..-1],
+  }
+
+  association CONTAINS_Seller binary {
+    Seller [1..*],
+    Contains [-1..-1],
+  }
+
+  // Seller provides Product with stock/warranty attributes
+  association PROVIDES binary {
+    Seller [1..*],
+    Product [1..*]
+  } {
+    int inStockQty;
+    int warranty;
+  }
+
+  // Reflexive association on Client (referral)
+  association REFERRAL reflexive on Client {
+    roles (referrer, referred)
+    m1 [0..*]   // referrer multiplicity
+    m2 [0..1]   // referred multiplicity
+  }
+
+  association has binary {
+    Client [0..*],
+    Address [1]
+  } 
+
+  association is_composed_of binary {
+    Category [1],
+    Product [1..*]
+  } 
+
+association is_composed_of2 binary {
+    Order [1],
+    Payment [0..1]
+  } 
+
 }
