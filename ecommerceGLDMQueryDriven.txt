@@ -1,157 +1,197 @@
-NodeLabel Client{
- login String isUnique
- password String
- phone Integer
- creationDate Datetime
- firstName String
- lastName String
- name String
- gov_id String
-}
-NodeLabel Type{
- type String
-}
-NodeLabel Address{
- addr_id String isUnique
- road String
- district String
- town String
- zipcode Integer
-}
-NodeLabel Order{
- oid Integer isUnique
- odatetime Datetime
- shippingFee Float
- total Float
- sequenceNumber Integer
-}
-NodeLabel Product{
- reference String isUnique
- designation String
- description String
-}
-NodeLabel Seller{
- seller_gov_id Integer isUnique
- companyName String
-}
-NodeLabel Category{
- code String isUnique
- cname String
- vatRate Float
-}
-NodeLabel Contains{
- orderedQty Integer
- unitPrice Float
- discountRate Float
-}
-NodeLabel Warranty{
- warranty Integer
-}
-NodeLabel CreditCard{
- card_number Integer isUnique
- expireDate Date
- cvc Integer
- status Boolean
- bank String
- interestRate Float
- limit Float
-}
-NodeLabel DebitCard{
- card_number Integer isUnique
- expireDate Date
- cvc Integer
- status Boolean
- bank String
- balance Float
- label String
-}
-NodeLabel Payment{
- pm_number Integer
- pm_datetime Datetime
-}
-NodeLabel RemoteAccess{
- idAccess Integer
- timeAccess Datetime
- ip String
- webBrowser String
- OSNameVersion String
-}
-RelType Referral{
- NodeLabel Client
- Roles referrer,referred
- Cardinality <0-n>,<0-1>
-}
-RelType Provides{
- NodeLabel Seller,Product
- Cardinality <1-n>,<1-n>
- Property inStockQty Integer,warranty Integer
-}
-RelType Contains_Order{
- NodeLabel Contains,Order
- Cardinality <?-?>,<1-n>
-}
-RelType Contains_Product{
- NodeLabel Contains,Product
- Cardinality <?-?>,<1-n>
-}
-RelType Contains_Seller{
- NodeLabel Contains,Seller
- Cardinality <?-?>,<1-n>
-}
-RelType pays{
- NodeLabel Client,Order
- Cardinality <1-1>,<0-n>
-}
-RelType makes{
- NodeLabel Client,Order
- Cardinality <1-1>,<0-n>
-}
-RelType Concerns1{
- NodeLabel Payment,DebitCard
- Cardinality <0-n>,<0-1>
-}
-RelType Concerns2{
- NodeLabel Payment,CreditCard
- Cardinality <0-n>,<0-1>
-}
-RelType uses{
- NodeLabel Payment,RemoteAccess
- Cardinality <0-1>,<1-1>
-}
-RelType has{
- NodeLabel Client,Address
- Cardinality <0-n>,<1-1>
-}
-RelType is_composed_of{
-NodeLabel Category,Product
-Cardinality <1-1>,<1-n>
-}
-RelType is_composed_of2{
- NodeLabel Order,Payment
- Cardinality <1-1>,<0-1>
-}
-RelType typeOfClient{
- NodeLabel Client,Type
- Cardinality <0-n>,<1-1>
-}
-RelType Participates{
- NodeLabel Client,Order
- Cardinality <1-2>,<0-n>
-}
-RelType Next{
- NodeLabel Client
- Roles next,previous
- Cardinality <0-1>,<0-1>
-}
-RelType CategoriesPurchasedByClient{
- NodeLabel Client,Category
- Cardinality <?-?>,<?-?>
-}
-RelType warrantySeller{
- NodeLabel Seller,Warranty
- Cardinality <1-n>,<?-?>
-}
-RelType warrantyProduct{
- NodeLabel Product,Warranty
- Cardinality <1-n>,<?-?>
+gldm ecommerce {
+
+  // -------- Node labels --------
+
+  nodeLabel Client  {
+    string login unique;
+    string password;
+    int phone;
+    datetime creationDate;
+    string firstName;
+    string lastName;
+    string name;
+    int gov_id;
+    string type;
+  }
+
+  nodeLabel Address {
+    string addr_id unique;
+    string road;
+    string district;
+    string town;
+    int zipcode;
+  }
+
+  nodeLabel Order   {
+    int oid unique;
+    datetime odatetime;
+    float shippingFee;
+    float total;
+    int sequenceNumber;
+  }
+
+  nodeLabel Payment {
+    int pm_number unique;
+    datetime pm_datetime;
+  }
+
+  nodeLabel RemoteAccess {
+    int idAccess unique;
+    datetime timeAccess;
+    string ip;
+    string webBrowser;
+    string OSNameVersion;
+  }
+
+  nodeLabel CreditCard {
+    int card_number unique;
+    date expireDate;
+    int cvc;
+    boolean status;
+    string bank;
+    float interestRate;
+    float limit;
+  }
+
+  nodeLabel DebitCard {
+    int card_number unique;
+    date expireDate;
+    int cvc;
+    boolean status;
+    string bank;
+    float balance;
+    string label;
+  }
+
+  nodeLabel Product {
+    string reference unique;
+    string designation;
+    string description;
+  }
+
+  nodeLabel Category {
+    string code unique;
+    string cname;
+    float vatRate;
+  }
+
+  nodeLabel Seller {
+    int seller_gov_id unique;
+    string company_name;
+  }
+
+  nodeLabel Warranty {
+    int warranty;
+  }
+
+  // -------- Relationship types --------
+
+  // Client pays Orders (Client [0..1] - Order [0..*])
+  relType PAYS binary {
+    Client [0..1],
+    Order [0..*]
+  }
+
+  // Client makes Orders: Client [1] - Order [0..*]
+  relType MAKES binary {
+    Client [1],
+    Order [0..*]
+  }
+
+  // RemoteAccess uses Payment: RemoteAccess [1] - Payment [0..1]
+  relType USES binary {
+    RemoteAccess [1],
+    Payment [0..1]
+  }
+
+  // Payment concerns1 DebitCard
+  relType CONCERNS1 binary {
+    Payment [0..*],
+    DebitCard [0..1]
+  }
+
+  // Payment CONCERNS2 CreditCard
+  relType CONCERNS binary {
+    Payment [0..*],
+    CreditCard [0..1]
+  }
+
+
+  // Adjusting of the ternary relType "Contains": Order × Product × Seller
+  nodeLabel CONTAINS {
+    int orderedQty;
+    float unitPrice;
+    float discountRate;
+  }
+
+  relType CONTAINS_Order binary {
+    Order [0..*],
+    Contains [-1..-1],
+  } 
+
+  relType CONTAINS_Product binary {
+    Product [1..*],
+    Contains [-1..-1],
+  }
+
+  relType CONTAINS_Seller binary {
+    Seller [1..*],
+    Contains [-1..-1],
+  }
+
+  // Seller provides Product with stock/warranty attributes
+  relType PROVIDES binary {
+    Seller [1..*],
+    Product [1..*]
+  } {
+    int inStockQty;
+    int warranty;
+  }
+
+  // Reflexive relType on Client (referral)
+  relType REFERRAL reflexive on Client {
+    roles (referrer, referred)
+    m1 [0..*]   // referrer multiplicity
+    m2 [0..1]   // referred multiplicity
+  }
+
+  relType has binary {
+    Client [0..*],
+    Address [1]
+  } 
+
+  relType is_composed_of binary {
+    Category [1],
+    Product [1..*]
+  } 
+
+  relType is_composed_of2 binary {
+    Order [1],
+    Payment [0..1]
+  } 
+
+
+  relType participates binary {Client [1..2], Order [0..*] }
+
+  // warrantySeller
+  relType warrantySeller binary {Warranty [-1..-1],Seller [1..*]}
+
+  // warrantyProduct
+  relType warrantyProduct binary {Warranty [-1..-1],Product [1..*]}
+
+  relType typeOfClient binary {Client [0..*], end2 Type [1] }
+
+  relType Next reflexive on Order {roles (sequence, sequence),m1 [0..1],m2 [0..1]}
+
+  relType CategoriesPurchasedByClient binary {Client [0..*],Category [0..*]}
+
+  // Indexes
+  index idx_Q1_ClientLogin on Client(login)
+  index idx_Q2_SellerGov on Seller(seller_gov_id)
+  index idx_Q2_Warranty on Provides_Fact(warranty)
+  index idx_Q3_ClientType on Client(type)
+  index idx_Q4_ClientLogin on Client(login)
+  index idx_Q4_Sequence on Order(sequenceNumber)
+  index idx_Q5_ClientLogin on Client(login)
+
 }
