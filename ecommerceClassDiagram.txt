@@ -1,111 +1,173 @@
-Class Client{
- login String
- password String
- phone Integer
- creationDate Datetime
-}
-Class Person extends Client{
- firstName String
- lastName String
-}
-Class Company extends Client{
- name String
- gov_id String
-}
-Class Address{
- addr_id String
- road String
- district String
- town String
- zipcode Integer
-}
-Class Order{
- oid Integer
- odatetime Datetime
- shippingFee Float
- total Float
- sequenceNumber Integer
-}
-Class Product{
- reference String
- designation String
- description String
-}
-Class Seller{
- seller_gov_id Integer
- companyName String
-}
-Class Category{
- code String
- cname String
- vatRate Float
-}
-Class BankCard{
- card_number Integer
- expireDate Date
- cvc Integer
- status Boolean
- bank String
-}
-Class CreditCard extends BankCard{
- interestRate Float
- limit Float
-}
-Class DebitCard extends BankCard{
- balance Float
- label String
-}
-Class Payment{
- pm_number Integer
- pm_datetime Datetime
-}
-Class RemoteAccess{
- idAccess Integer
- timeAccess Datetime
- ip String
- webBrowser String
- OSNameVersion String
-}
-Association Referral{
- Class Client
- Roles referrer,referred
- Multiplicity <0..*>,<0..1>
-}
-Association Contains{
- Class Order,Seller,Product
- Multiplicity <0..*>,<1..*>,<1..*>
- Attribute orderedQty Integer,unitPrice Float,discountRate Float
-}
-Association Provides{
- Class Seller,Product
- Multiplicity <1..*>,<1..*>
- Attribute inStockQty Integer,warranty Integer
-}
-Association pays{
- Class Client,Order
- Multiplicity <1..1>,<0..*>
-}
-Association makes{
- Class Client,Order
- Multiplicity <1..1>,<0..*>
-}
-Association Concerns{
- Class Payment,BankCard
- Multiplicity <0..*>,<1..1>
-}
-Association uses{
- Class Payment,RemoteAccess
- Multiplicity <0..1>,<1..1>
-}
-Aggregation{
- Class Client,Address
- Multiplicity <1..1>
-}
-Composition{
- Class Order,Payment
- Multiplicity <0..1>
-}
-Composition{
-Class Category,Product
-Multiplicity <1..*>
+cd ecommerce {
+
+ // -------- Classes --------
+
+ class Client {
+  string login unique;
+  string password;
+  int phone;
+  datetime creationDate;
+ }
+
+ class Person {
+  string firstName;
+  string lastName;
+ }
+
+ class Company {
+  string name;
+  int gov_id;
+ }
+
+ class Address {
+  string addr_id unique;
+  string road;
+  string district;
+  string town;
+  int zipcode;
+ }
+
+ class Order  {
+  int oid unique;
+  datetime odatetime;
+  float shippingFee;
+  float total;
+  int sequenceNumber;
+ }
+
+ class Payment {
+  int pm_number unique;
+  datetime pm_datetime;
+ }
+
+ class RemoteAccess {
+  int idAccess unique;
+  datetime timeAccess;
+  string ip;
+  string webBrowser;
+  string OSNameVersion;
+ }
+
+ class BankCard {
+  int card_number unique;
+  date expireDate;
+  int cvc;
+  boolean status;
+  string bank;
+ }
+
+ class CreditCard {
+  float interestRate;
+  float limit;
+ }
+
+ class DebitCard {
+  float balance;
+  string label;
+ }
+
+ class Product {
+  string reference unique;
+  string designation;
+  string description;
+ }
+
+ class Category {
+  string code unique;
+  string cname;
+  float vatRate;
+ }
+
+ class Seller {
+  int seller_gov_id unique;
+  string company_name;
+ }
+
+ // -------- Inheritance --------
+
+ inheritance Client -> Person, Company {
+  isDisjoint = true;
+  isComplete = true;
+ }
+
+ inheritance BankCard -> CreditCard, DebitCard {
+  isDisjoint = false; // overlapping
+  isComplete = true;  // complete
+ }
+
+ // -------- Associations --------
+
+ // Client pays Orders (Client [0..1] - Order [0..*])
+ association PAYS binary {
+  Client [0..1],
+  Order [0..*]
+ }
+
+ // Client makes Orders: Client [1] - Order [0..*]
+ association MAKES binary {
+  Client [1],
+  Order [0..*]
+ }
+
+ // RemoteAccess uses Payment: RemoteAccess [1] - Payment [0..1]
+ association USES binary {
+  RemoteAccess [1],
+  Payment [0..1]
+ }
+
+ // Payment concerns BankCard: Payment [0..*] - BankCard [1]
+ association CONCERNS binary {
+  Payment [0..*],
+  BankCard [1]
+ }
+
+ // Ternary association: Order × Product × Seller with line-item attributes
+ association CONTAINS nary {
+  Order [0..*],
+  Product [1..*],
+  Seller [1..*]
+ } {
+  int orderedQty;
+  float unitPrice;
+  float discountRate;
+ }
+
+ // Seller provides Product with stock/warranty attributes
+ association PROVIDES binary {
+  Seller [1..*],
+  Product [1..*]
+ } {
+  int inStockQty;
+  int warranty;
+ }
+
+ // Reflexive association on Client (referral)
+ association REFERRAL reflexive on Client {
+  roles (referrer, referred)
+  m1 [0..*]  // referrer multiplicity
+  m2 [0..1]  // referred multiplicity
+ }
+
+ // -------- Aggregation & Composition --------
+
+ // Address aggregates Clients
+ aggregation {
+  parent Address,
+  child Client,
+  childMultiplicity [1]
+ }
+
+ // Order composes Payments
+ composition {
+  whole Order,
+  part Payment,
+  partMultiplicity [0..1]
+ }
+
+ // Category composes Products
+ composition {
+  whole Category,
+  part Product,
+  partMultiplicity [1..*]
+ }
 }
