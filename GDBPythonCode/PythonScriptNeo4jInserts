@@ -135,8 +135,7 @@ with driver.session(database=dbs[4]) as session_gd:
     for idx in indexes_er:
         session_gd.run(idx)
 
-# === RELATIONSHIP POPULATION FOR THE FIVE DATABASES ========
-# ==========================================================
+# RELATIONSHIP POPULATION FOR THE FIVE DATABASES 
 
 with driver.session(database=dbs[0]) as s1, \
      driver.session(database=dbs[1]) as s2, \
@@ -284,5 +283,18 @@ with driver.session(database=dbs[0]) as s1, \
             CREATE (p)-[:CONCERN2]->(c)
             """
         s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
+print("Creating CategoriesPurchasedByClient relationships in query-driven databases...")
+query_categories_purchased = """
+MATCH (c:Client)-[:makes]->(o:Order)
+      <-[:containsOrder]-(co:Contains)
+      -[:containsProduct]->(p:Product)
+      -[:is_composed_of]->(cat:Category)
+MERGE (c)-[:CategoriesPurchasedByClient]->(cat)
+"""
+s4.run(query_categories_purchased)
+s5.run(query_categories_purchased)
+t_end = tm.time()
+print(f"CategoriesPurchasedByClient relationships created successfully in {t_end - t_start:.2f} seconds.")
 
 driver.close()
