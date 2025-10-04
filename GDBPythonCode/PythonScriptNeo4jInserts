@@ -1,583 +1,288 @@
 import random
 from datetime import datetime, timedelta
 from neo4j import GraphDatabase
-
 import time as tm
-s=0
 
-# Connection details
 uri = "bolt://localhost:7687"
 username = "neo4j"
 password = "neo4j1234"
 
-#list of indexes in the 2nd database (indexed ecommerce)
-indexes = [
-    "CREATE INDEX client_login IF NOT EXISTS FOR (c:Client) ON (c.login)",
-    "CREATE INDEX seller_seller_gov_id IF NOT EXISTS FOR (s:Seller) ON (s.seller_gov_id)",
-    "CREATE INDEX client_type IF NOT EXISTS FOR (c:Client) ON (c.type)",
-    "CREATE INDEX order_odatetime IF NOT EXISTS FOR (o:Order) ON (o.odatetime)",
-    "CREATE INDEX order_oid_sequenceNumber IF NOT EXISTS FOR (o:Order) ON (o.oid, o.sequenceNumber)",
-    "CREATE INDEX debitcard_label_status IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label, dc.status)",    
-    "CREATE INDEX debitcard_label IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label)",
-    "CREATE INDEX Payment_dateTime IF NOT EXISTS FOR (pm:Payment) ON (pm.pm_datetime)",
-    "CREATE INDEX debitcard_label_bank IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label, dc.bank)",
-    "CREATE INDEX address_town IF NOT EXISTS FOR (a:Address) ON (a.town)",    
-    "CREATE INDEX order_shipping IF NOT EXISTS FOR (o:Order) ON (o.odatetime,o.shippingFee)",    
-    "CREATE INDEX creditcard_card_number IF NOT EXISTS FOR (cc:CreditCard) ON (cc.card_number)",
-    "CREATE INDEX debitcard_card_number IF NOT EXISTS FOR (dc:DebitCard) ON (dc.card_number)"    
-    "CREATE INDEX remoteAccessIP IF NOT EXISTS FOR (ra:RemoteAccess  ) ON (ra.ip)",
-    "CREATE INDEX order_id IF NOT EXISTS FOR (o:Order) ON (o.id)", 
-    "CREATE INDEX category_code IF NOT EXISTS FOR (cat:Category) ON (cat.code)",   
-    "CREATE INDEX product_reference IF NOT EXISTS FOR (p:Product) ON (p.reference)",
-    "CREATE INDEX provides_warranty IF NOT EXISTS FOR ()-[r:PROVIDES]-() ON (r.warranty)"
-]
-
-#list of indexes in the 4th database (indexed query driven ecommerce)
-indexes2 = [
-    "CREATE INDEX client_login IF NOT EXISTS FOR (c:Client) ON (c.login)",
-    "CREATE INDEX seller_seller_gov_id IF NOT EXISTS FOR (s:Seller) ON (s.seller_gov_id)",
-    "CREATE INDEX client_type IF NOT EXISTS FOR (t:Type) ON (t.type)",
-    "CREATE INDEX order_odatetime IF NOT EXISTS FOR (o:Order) ON (o.odatetime)",
-    "CREATE INDEX order_oid_sequenceNumber IF NOT EXISTS FOR (o:Order) ON (o.oid, o.sequenceNumber)",
-    "CREATE INDEX debitcard_label_status IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label, dc.status)",    
-    "CREATE INDEX debitcard_label IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label)",
-    "CREATE INDEX Payment_dateTime IF NOT EXISTS FOR (pm:Payment) ON (pm.pm_datetime)",
-    "CREATE INDEX debitcard_label_bank IF NOT EXISTS FOR (dc:DebitCard) ON (dc.label, dc.bank)",
-    "CREATE INDEX address_town IF NOT EXISTS FOR (a:Address) ON (a.town)",    
-    "CREATE INDEX order_shipping IF NOT EXISTS FOR (o:Order) ON (o.odatetime,o.shippingFee)",    
-    "CREATE INDEX creditcard_card_number IF NOT EXISTS FOR (cc:CreditCard) ON (cc.card_number)",
-    "CREATE INDEX debitcard_card_number IF NOT EXISTS FOR (dc:DebitCard) ON (dc.card_number)"    
-    "CREATE INDEX remoteAccessIP IF NOT EXISTS FOR (ra:RemoteAccess  ) ON (ra.ip)",
-    "CREATE INDEX order_id IF NOT EXISTS FOR (o:Order) ON (o.id)", 
-    "CREATE INDEX category_code IF NOT EXISTS FOR (cat:Category) ON (cat.code)",   
-    "CREATE INDEX product_reference IF NOT EXISTS FOR (p:Product) ON (p.reference)",
-    "CREATE INDEX provides_warranty IF NOT EXISTS FOR (w:Warranty) ON (w.warranty)"
-]
-
-
-
-import time as tm
-tm1=tm.time()
-# Create nodes
-
-# Database names
-db_base = "ecommercebase"
-db_indexed = "ecommerceindexed"
-db_query_driven="QueryDrivenEcommerce"
-db_indexed_query_driven="IndexedQueryDrivenEcommerce"
-
-# Connect to the Neo4j instance
 driver = GraphDatabase.driver(uri, auth=(username, password))
 
-# Helper functions
 def random_date(start_date, end_date):
     delta = end_date - start_date
-    random_days = random.randint(0, delta.days)
-    return start_date + timedelta(days=random_days)
+    return start_date + timedelta(days=random.randint(0, delta.days))
 
 def generate_phone():
-    return f"06{random.randint(10000000, 99999999)}"
+    return f"06{random.randint(10_000_000, 99_999_999)}"
 
 def random_vat_rate():
     return round(random.uniform(0.05, 0.2), 2)
 
-# Data constants
 categories = [f"Category_{i}" for i in range(1, 101)]
 products = [f"Product_{i}" for i in range(1, 10001)]
 sellers = [f"Seller_{i}" for i in range(1, 5001)]
 banks = ["Bank1", "Bank2", "Bank3", "Bank4", "Bank5"]
 
-# Start sessions for ecommercebase databases
+dbs = ["BasicEcommerce","pgGraphEcommerce","erSchemaEcommerce","extendedGDBSEcommerce","graphDesignEcommerce"]
 
-with driver.session(database=db_base) as session_base, driver.session(database=db_indexed) as session_indexed, driver.session(database=db_query_driven) as session_query,
-     driver.session(database=db_indexed_query_driven) as session_indexed_query:
-    #indexing
-    for index in indexes:
-        session_indexed.run(index)
-    for index in indexes2:
-        session_indexed_query.run(index)        
-                 
-    # Node Creation
-    print("Creating nodes...")
-    
-    #creation of two nodes (person & company) (useful for query-driven DBs, 3rd and 4th)
-    queryClientTypes = "CREATE (:Type {type: 'person'}), (:Type {type: 'company'})"
-    session_query.run(queryClientTypes)
-    session_indexed_query.run(queryClientTypes)
-    
-    #we suppose we have the warranty month numbers in the set {1,3,6,12,24,60}
-    #creation of 6 nodes for query-driven DBs (3rd and 4th) 
-    warranties = [f"(:Warranty {{warranty: {i}}})" for i in {1,3,6,12,24,60}]
-    queryWarrantyVal = "CREATE " + ", ".join(warranties)
-    session_query.run(queryWarrantyVal)
-    session_indexed_query.run(queryWarrantyVal)    
+with driver.session(database="extendedGDBSEcommerce") as s_ext, driver.session(database="graphDesignEcommerce") as s_gd:
+    s_ext.run("CREATE (:Type {type:'person'}),(:Type {type:'company'})")
+    s_gd.run("CREATE (:Type {type:'person'}),(:Type {type:'company'})")
+    warranties = [1,3,6,12,24,60]
+    query_w = "CREATE " + ", ".join([f"(:Warranty {{warranty:{w}}})" for w in warranties])
+    s_ext.run(query_w)
+    s_gd.run(query_w)
 
-    #execution time is estimated for insertions in the 1st database only
-    s1=0
-    # Client nodes
-    for i in range(10**6):
-        first_name = f"Firstname_{i}"
-        last_name = f"Lastname_{i}"
-        name=f"companyName_{i}"
-        gov_id=f"govIDCompany_{i}"
+with driver.session(database=dbs[0]) as s1, driver.session(database=dbs[1]) as s2, driver.session(database=dbs[2]) as s3, driver.session(database=dbs[3]) as s4, driver.session(database=dbs[4]) as s5:
+
+    for i in range(1_000_000):
         phone = generate_phone()
-        creation_date = random_date(datetime(2020, 1, 1), datetime(2023, 12, 31)).isoformat()
+        creation_date = random_date(datetime(2020,1,1), datetime(2023,12,31)).isoformat()
         client_type = "company" if i % 2 == 0 else "person"
         if client_type=="company":
-            query = f"""
-            CREATE (c:Client {{login: 'client_{i}', password: 'password_{i}', phone: '{phone}', creationDate: '{creation_date}',
-                              name: '{name}', gov_id: '{gov_id}', type: '{client_type}'}})
-            """
+            q = f"CREATE (:Client {{login:'client_{i}',password:'password_{i}',phone:'{phone}',creationDate:'{creation_date}',name:'companyName_{i}',gov_id:'govIDCompany_{i}',type:'{client_type}'}})"
+            s1.run(q);s2.run(q);s3.run(q)
+            q2 = f"MATCH (t:Type {{type:'{client_type}'}}) CREATE (c:Client {{login:'client_{i}',password:'password_{i}',phone:'{phone}',creationDate:'{creation_date}',name:'companyName_{i}',gov_id:'govIDCompany_{i}'}})-[:typeOfClient]->(t)"
+            s4.run(q2);s5.run(q2)
         else:
-            query = f"""
-            CREATE (c:Client {{login: 'client_{i}', password: 'password_{i}', phone: '{phone}', creationDate: '{creation_date}',
-                              firstname: '{first_name}', lastname: '{last_name}', type: '{client_type}'}})
-            """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s1+=(t2-t1)
-        session_indexed.run(query)
-        if client_type="company":   
-            queryDriven = f"""MATCH (t:Type {{type: '{client_type}'}})CREATE (c:Client {{login: 'client_{i}',password: 'password_{i}',phone: '{phone}',creationDate: '{creation_date}',
-    name: '{name}',gov_id: '{gov_id}'}})CREATE (c)-[:typeOfClient]->(t)""" 
-        else:
-            queryDriven = f"""MATCH (t:Type {{type: '{client_type}'}})CREATE (c:Client {{login: 'client_{i}',password: 'password_{i}',phone: '{phone}',creationDate: '{creation_date}',
-    firstname: '{first_name}',lastname: '{last_name}'}})CREATE (c)-[:typeOfClient]->(t)""" 
-        session_query.run(queryDriven)
-        session_indexed_query.run(queryDriven)
-    
-    print("1M clients inserted en",s1,"sec")
+            q = f"CREATE (:Client {{login:'client_{i}',password:'password_{i}',phone:'{phone}',creationDate:'{creation_date}',firstname:'Firstname_{i}',lastname:'Lastname_{i}',type:'{client_type}'}})"
+            s1.run(q);s2.run(q);s3.run(q)
+            q2 = f"MATCH (t:Type {{type:'{client_type}'}}) CREATE (c:Client {{login:'client_{i}',password:'password_{i}',phone:'{phone}',creationDate:'{creation_date}',firstname:'Firstname_{i}',lastname:'Lastname_{i}'}})-[:typeOfClient]->(t)"
+            s4.run(q2);s5.run(q2)
 
-    s2=0
-    # Address nodes
-    for i in range(7*10**5):
-        road = f"Road_{i}"
-        district = f"District_{random.randint(1, 50)}"
-        town = f"Town_{random.randint(1, 100)}"
-        zipcode = f"10{random.randint(100, 999)}"
-        query = f"CREATE (a:Address {{addr_id: 'addr_{i}', road: '{road}', district: '{district}', town: '{town}', zipcode: {zipcode}}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s2+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("700K addresses inserted  en",s2,"sec")
+    for i in range(700_000):
+        q = f"CREATE (:Address {{addr_id:'addr_{i}',road:'Road_{i}',district:'District_{random.randint(1,50)}',town:'Town_{random.randint(1,100)}',zipcode:{10000+random.randint(100,999)}}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
 
-    s3=0
-    # Order nodes
-    for i in range(2*10**6):
-        order_date = random_date(datetime(2020, 1, 1), datetime(2023, 12, 31)).isoformat()
-        shipping_fee = round(random.uniform(5, 50), 2)
-        total = round(random.uniform(50, 500), 2)
-        sequence_number = random.randint(1, 5)
-        query = f"CREATE (o:Order {{oid: {i}, odatetime: '{order_date}', shippingFee: {shipping_fee}, total: {total}, sequenceNumber: {sequence_number}}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s3+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("2M orders inserted  en",s3,"sec")
-
-    s4=0
-    # Product nodes
-    for i, product in enumerate(products):
-        designation = f"Designation_{i}"
-        description = f"Description of {product}"
-        query = f"CREATE (p:Product {{reference: 'P{i}', designation: '{designation}', description: '{description}'}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s4+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("10000 products inserted  en",s4,"sec")
-
-
-    s5=0
-    # Category nodes
-    for i, category in enumerate(categories):
-        vat_rate = random_vat_rate()
-        query = f"CREATE (cat:Category {{code: 'C{i}', cname: '{category}', vatRate: {vat_rate}}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s5+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("100 categories inserted  en",s5,"sec")
-
-    s6=0
-    # Seller nodes
-    for i, seller in enumerate(sellers):
-        gov_id = f"gov_{i}"
-        company_name = f"Company_{i}"
-        query = f"CREATE (s:Seller {{seller_gov_id: '{gov_id}', companyName: '{company_name}'}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s6+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("5000 sellers inserted  en",s6,"sec")
-
-    s7=0
-    # Payment nodes
-    for i in range(1500000):
-        payment_date = random_date(datetime(2020, 1, 1), datetime(2023, 12, 31)).isoformat()
-        query = f"CREATE (p:Payment {{pm_number: {i}, pm_datetime: '{payment_date}'}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s7+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("1500000 payments inserted  en",s7,"sec")
-
-    s8=0
-    # CreditCard nodes
-    for i in range(400000):
-        card_number = random.randint(1000000000000000, 9999999999999999)
-        expire_date = f"{random.randint(1, 12)}/{random.randint(23, 30)}"
-        cvc = random.randint(100, 999)
-        status = random.choice([True, False])
-        bank = random.choice(banks)
-        interest_rate = round(random.uniform(0.01, 0.25), 2)
-        limit = round(random.uniform(1000, 10000), 2)
-        query = f"CREATE (c:CreditCard {{card_number: {card_number}, expireDate: '{expire_date}', cvc: {cvc}, status: {status}, bank: '{bank}', interestRate: {interest_rate}, limit: {limit}}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s8+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("400000 credit cards inserted  en",s8,"sec")
-
-    s9=0
-    # DebitCard nodes
-    for i in range(350000):
-        card_number = random.randint(1000000000000000, 9999999999999999)
-        expire_date = f"{random.randint(1, 12)}/{random.randint(23, 30)}"
-        cvc = random.randint(100, 999)
-        status = random.choice([True, False])
-        bank = random.choice(banks)
-        balance = round(random.uniform(0, 10000), 2)
-        label = random.choice(["Visa", "MasterCard", "Other"])
-        query = f"CREATE (d:DebitCard {{card_number: {card_number}, expireDate: '{expire_date}', cvc: {cvc}, status: {status}, bank: '{bank}', balance: {balance}, label: '{label}'}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s9+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("350000 debit cards inserted  en",s9,"sec")
-
-    s10=0
-    # RemoteAccess nodes
-    for i in range(3*10**6):
-        access_time = random_date(datetime(2020, 1, 1), datetime(2023, 12, 31)).isoformat()
-        ip_address = f"192.168.{random.randint(0, 255)}.{random.randint(0, 255)}"
-        web_browser = random.choice(["Chrome", "Firefox", "Edge", "Safari"])
-        os_version = random.choice(["Windows 10", "macOS", "Ubuntu 20.04"])
-        query = f"CREATE (r:RemoteAccess {{idAccess: {i}, timeAccess: '{access_time}', ip: '{ip_address}', webBrowser: '{web_browser}', OSNameVersion: '{os_version}'}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("3M remote access inserted  en",s10,"sec")
-
-    s11=0
-    # Contains nodes
-    for i in range(100000):
-        ordered_qty = random.randint(1, 10)
-        unit_price = round(random.uniform(10, 1000), 2)
-        discount_rate = round(random.uniform(0.0, 0.5), 2)
-        query = f"CREATE (c:Contains {{id: {i}, orderedQty: {ordered_qty}, unitPrice: {unit_price}, discountRate: {discount_rate}}})"
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s11+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("100000 contains nodes inserted  en",s11,"sec")
-    print("Nodes created successfully. Creating relationships...")
-
-    s12=0
-    # Referral relationships
-    for i in range(10**6):
-        if random.random() < 0.3:  # 30% chance of having a referrer
-            referrer_id = random.randint(0, 10**6)
-            if referrer_id != i:              
-                query = f"""
-                MATCH (c1:Client {{login: 'client_{i}'}}), (c2:Client {{login: 'client_{referrer_id}'}})
-                CREATE (c1)-[:Referral]->(c2),
-                       (c2)-[:Referral]->(c1)
-                """
-                t1=tm.time()
-                session_base.run(query)
-                t2=tm.time()
-                s12+=(t2-t1)
-                session_indexed.run(query)
-                session_query.run(query)
-                session_indexed_query.run(query)
-    print("450000 referrals RT inserted  en",s12,"sec")
-
-
-    '''s13=0
-    # Makes relationships
-    for i in range(2*10**6):
-        client_id = random.randint(0, 10**6)
-        query = f"""
-        MATCH (c:Client {{login: 'client_{client_id}'}}), (o:Order {{oid: {i}}})
-        CREATE (c)-[:makes]->(o)
-        """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s13+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("2M makes RT inserted  en",s13,"sec")
-
-    s14=0
-    # Pays relationships
-    for i in range(1700000):  # 1700000 orders are paid
-        client_id = random.randint(0, 10**6)
-        query = f"""
-        MATCH (c:Client {{login: 'client_{client_id}'}}), (o:Order {{oid: {i}}})
-        CREATE (c)-[:pays]->(o)
-        """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s14+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("1700000 pays RT inserted  en",s14,"sec")'''
-
-    s13_s14 = 0
     for i in range(2_000_000):
-        client_id = random.randint(0, 1_000_000)
-        
-        # makes relationship construction
-        query = f"""
-        MATCH (c:Client {{login: 'client_{client_id}'}}), (o:Order {{oid: {i}}})
-        CREATE (c)-[:makes]->(o),
-               (o)-[:makes]->(c)
-        """
-        
-        # Add pays relationship only for the first 1,700,000
-        if i < 1_700_000:
-            query += f""",
-                   (c)-[:pays]->(o),
-                   (o)-[:pays]->(c)
+        odt = random_date(datetime(2020,1,1),datetime(2023,12,31)).isoformat()
+        q = f"CREATE (:Order {{oid:{i},odatetime:'{odt}',shippingFee:{round(random.uniform(5,50),2)},total:{round(random.uniform(50,500),2)},sequenceNumber:{random.randint(1,5)}}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i in range(1_500_000):
+        pdt = random_date(datetime(2020,1,1),datetime(2023,12,31)).isoformat()
+        q = f"CREATE (:Payment {{pm_number:{i},pm_datetime:'{pdt}'}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i in range(3_000_000):
+        at = random_date(datetime(2020,1,1),datetime(2023,12,31)).isoformat()
+        q = f"CREATE (:RemoteAccess {{idAccess:{i},timeAccess:'{at}',ip:'192.168.{random.randint(0,255)}.{random.randint(0,255)}',webBrowser:'{random.choice(['Chrome','Firefox','Edge','Safari'])}',OSNameVersion:'{random.choice(['Windows 10','macOS','Ubuntu 20.04'])}'}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i in range(400_000):
+        q = f"CREATE (:CreditCard {{card_number:{random.randint(10**15,10**16-1)},expireDate:'{random.randint(1,12)}/{random.randint(23,30)}',cvc:{random.randint(100,999)},status:{random.choice([True,False])},bank:'{random.choice(banks)}',interestRate:{round(random.uniform(0.01,0.25),2)},limit:{round(random.uniform(1000,10000),2)}}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i in range(200_000):
+        q = f"CREATE (:DebitCard {{card_number:{random.randint(10**15,10**16-1)},expireDate:'{random.randint(1,12)}/{random.randint(23,30)}',cvc:{random.randint(100,999)},status:{random.choice([True,False])},bank:'{random.choice(banks)}',balance:{round(random.uniform(0,10000),2)},label:'{random.choice(['Visa','MasterCard','Other'])}'}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i, product in enumerate(products):
+        q = f"CREATE (:Product {{reference:'P{i}',designation:'Designation_{i}',description:'Description of {product}'}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i, category in enumerate(categories):
+        q = f"CREATE (:Category {{code:'C{i}',cname:'{category}',vatRate:{random_vat_rate()}}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i, seller in enumerate(sellers):
+        q = f"CREATE (:Seller {{seller_gov_id:'gov_{i}',companyName:'Company_{i}'}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+    for i in range(100_000):
+        q = f"CREATE (:Contains {{id:{i},orderedQty:{random.randint(1,10)},unitPrice:{round(random.uniform(10,1000),2)},discountRate:{round(random.uniform(0.0,0.5),2)}}})"
+        s1.run(q);s2.run(q);s3.run(q);s4.run(q);s5.run(q)
+
+
+#add constraints and indexes in the second, third and fifth databases
+constraints_pg = [
+    "CREATE CONSTRAINT client_login IF NOT EXISTS FOR (c:Client) REQUIRE c.login IS UNIQUE",
+    "CREATE CONSTRAINT address_addr_id IF NOT EXISTS FOR (a:Address) REQUIRE a.addr_id IS UNIQUE",
+    "CREATE CONSTRAINT order_oid IF NOT EXISTS FOR (o:Order) REQUIRE o.oid IS UNIQUE",
+    "CREATE CONSTRAINT payment_pm_number IF NOT EXISTS FOR (p:Payment) REQUIRE p.pm_number IS UNIQUE",
+    "CREATE CONSTRAINT remoteaccess_idAccess IF NOT EXISTS FOR (r:RemoteAccess) REQUIRE r.idAccess IS UNIQUE",
+    "CREATE CONSTRAINT creditcard_card_number IF NOT EXISTS FOR (cc:CreditCard) REQUIRE cc.card_number IS UNIQUE",
+    "CREATE CONSTRAINT debitcard_card_number IF NOT EXISTS FOR (dc:DebitCard) REQUIRE dc.card_number IS UNIQUE",
+    "CREATE CONSTRAINT product_reference IF NOT EXISTS FOR (p:Product) REQUIRE p.reference IS UNIQUE",
+    "CREATE CONSTRAINT category_code IF NOT EXISTS FOR (cat:Category) REQUIRE cat.code IS UNIQUE",
+    "CREATE CONSTRAINT seller_seller_gov_id IF NOT EXISTS FOR (s:Seller) REQUIRE s.seller_gov_id IS UNIQUE",
+    "CREATE CONSTRAINT contains_id IF NOT EXISTS FOR (c:Contains) REQUIRE c.id IS UNIQUE"
+]
+
+with driver.session(database=dbs[1]) as session_pg:
+    for c in constraints_pg:
+        session_pg.run(c)
+
+indexes_er = [
+    "CREATE INDEX client_login IF NOT EXISTS FOR (c:Client) ON (c.login)",
+    "CREATE INDEX client_type IF NOT EXISTS FOR (c:Client) ON (c.type)",
+    "CREATE INDEX seller_seller_gov_id IF NOT EXISTS FOR (s:Seller) ON (s.seller_gov_id)",
+    "CREATE INDEX order_oid_sequenceNumber IF NOT EXISTS FOR (o:Order) ON (o.oid, o.sequenceNumber)",
+    "CREATE INDEX category_code IF NOT EXISTS FOR (cat:Category) ON (cat.code)",
+    "CREATE INDEX provides_warranty IF NOT EXISTS FOR ()-[r:PROVIDES]-() ON (r.warranty)",
+    "CREATE INDEX payment_date IF NOT EXISTS FOR (p:Payment) ON (p.pm_datetime)",
+    "CREATE INDEX address_town IF NOT EXISTS FOR (a:Address) ON (a.town)"
+]
+
+with driver.session(database=dbs[2]) as session_er:
+    for idx in indexes_er:
+        session_er.run(idx)
+
+with driver.session(database=dbs[4]) as session_gd:
+    for c in constraints_pg:
+        session_gd.run(c)
+    for idx in indexes_er:
+        session_gd.run(idx)
+
+# === RELATIONSHIP POPULATION FOR THE FIVE DATABASES ========
+# ==========================================================
+
+with driver.session(database=dbs[0]) as s1, \
+     driver.session(database=dbs[1]) as s2, \
+     driver.session(database=dbs[2]) as s3, \
+     driver.session(database=dbs[3]) as s4, \
+     driver.session(database=dbs[4]) as s5:
+
+    # Referral between part of clients
+    for i in range(200_000):
+        c1 = random.randint(0, 999_999)
+        c2 = random.randint(0, 999_999)
+        if c1 != c2:
+            q = f"""
+            MATCH (a:Client {{login:'client_{c1}'}}), (b:Client {{login:'client_{c2}'}})
+            CREATE (a)-[:REFERRAL]->(b)
             """
-        
-        t1 = tm.time()
-        session_base.run(query)
-        t2 = tm.time()
-        session_indexed.run(query)
-        s13_s14 += (t2 - t1)
-        
-        query2 = query + f""",(c)-[:Participates]->(o),(o)-[:Participates]->(c)
-        session_query.run(query2)
-        session_indexed_query.run(query2)"""
+            s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
 
-    print("2M makes + 1.7M pays RT inserted en", s13_s14, "sec")
-
-
-
-    s15=0
-    # Has relationships (Client -> Address)
-    for i in range(10**6):  # Every client has an address
-        address_id = random.randint(0, 700000)
-        query = f"""
-        MATCH (c:Client {{login: 'client_{i}'}}), (a:Address {{addr_id: 'addr_{address_id}'}})
-        CREATE (c)-[:has]->(a)
+    # makes and pays between Client and Order
+    for i in range(1_700_000):
+        cid = random.randint(0, 999_999)
+        oid = random.randint(0, 1_999_999)
+        q_m = f"""
+        MATCH (c:Client {{login:'client_{cid}'}}), (o:Order {{oid:{oid}}})
+        CREATE (c)-[:MAKES]->(o)
         """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s15+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("1M has RT inserted  en",s15,"sec")
-
-    s16=0
-    # Uses relationships (Payment -> RemoteAccess)
-    for i in range(1700000):  # Payments use remote access
-        remote_access_id = random.randint(0, 2000000)
-        query = f"""
-        MATCH (p:Payment {{pm_number: {i}}}), (r:RemoteAccess {{idAccess: {remote_access_id}}})
-        CREATE (p)-[:uses]->(r)
+        q_p = f"""
+        MATCH (c:Client {{login:'client_{cid}'}}), (o:Order {{oid:{oid}}})
+        CREATE (c)-[:PAYS]->(o)
         """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s16+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)        
-    print("1700000 uses RT inserted  en",s16,"sec")
+        s1.run(q_m); s2.run(q_m); s3.run(q_m); s4.run(q_m); s5.run(q_m)
+        s1.run(q_p); s2.run(q_p); s3.run(q_p); s4.run(q_p); s5.run(q_p)
 
-    s17=0
-    # Payment relationships with orders (is_composed_of2)
-    for i in range(1700000):  # 1700000 payments linked to orders
-        order_id = random.randint(0, 1999999)  # Random order ID
-        payment_id = i                        # Payment ID (unique)
-
-        query_payment_order = f"""
-        MATCH (p:Payment {{pm_number: {payment_id}}}), (o:Order {{oid: {order_id}}})
-        CREATE (p)-[:is_composed_of2]->(o)
+        # participates only in query-driven DBs
+        q_part = f"""
+        MATCH (c:Client {{login:'client_{cid}'}}), (o:Order {{oid:{oid}}})
+        CREATE (c)-[:PARTICIPATES]->(o)
         """
-        t1=tm.time()
-        session_base.run(query_payment_order)
-        t2=tm.time()
-        s17+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("1700000 is-composed-of2 RT inserted  en",s17,"sec")
+        s4.run(q_part); s5.run(q_part)
 
-    s18=0
-    # Is composed of relationships (Product -> Category)
-    for i in range(10000):  # Each product belongs to a category
-        category_id = random.randint(0, 99)
-        query = f"""
-        MATCH (p:Product {{reference: 'P{i}'}}), (cat:Category {{code: 'C{category_id}'}})
-        CREATE (p)-[:is_composed_of]->(cat)
-        """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s18+=(t2-t1)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)
-    print("10000 is-composed-of RT inserted  en",s18,"sec")
-
-    s19=0
-    # Provides relationships (Seller -> Product)
-    for i in range(10000):  # Sellers provide products
-        seller_id = random.randint(0, 4999)
-        in_stock_qty = random.randint(10, 1000)
-        warranty = random.choice([1,3,6,12,24,60])      
-        query = f"""
-        MATCH (s:Seller {{seller_gov_id: 'gov_{seller_id}'}}), (p:Product {{reference: 'P{i}'}})
-        CREATE (s)-[:Provides {{inStockQty: {in_stock_qty}, warranty: {warranty}}}]->(p)
-        """
-        t1=tm.time()
-        session_base.run(query)
-        t2=tm.time()
-        s+=(t2-t1)
-        session_indexed.run(query)
-        query2 = f"""MATCH (s:Seller {{seller_gov_id: 'gov_{seller_id}'}}), (p:Product {{reference: 'P{i}'}}),(w:Warranty {{warranty: {warranty}}})
-        CREATE (s)-[:warrantySeller]->(w),(w)-[:warrantySeller]->(s), (p)-[:warrantyProduct]->(w),(w)-[:warrantyProduct]->(p)"""
-        session_query.run(query2)
-        session_indexed_query.run(query2)
-    print("10000 Provides RT inserted  en",s19,"sec")
-
-    s20=0
-    # Concern relationships (Payment -> CreditCard/DebitCard)
-    for i in range(1700000):  # Payments are associated with cards
-        if random.random() < 0.5:  # 50% chance to use CreditCard
-            card_id = random.randint(0, 400000)
-            query = f"""
-            MATCH (p:Payment {{pm_number: {i}}}), (c:CreditCard {{card_number: {card_id}}})
-            CREATE (p)-[:concerns]->(c)
-            """
-        else:  # 50% chance to use DebitCard
-            card_id = random.randint(0, 350000)
-            query = f"""
-            MATCH (p:Payment {{pm_number: {i}}}), (d:DebitCard {{card_number: {card_id}}})
-            CREATE (p)-[:concerns]->(d)
-            """
-        t1=tm.time()
-        session_base.run(query)
-        session_indexed.run(query)
-        session_query.run(query)
-        session_indexed_query.run(query)  
-        t2=tm.time()
-        s20+=(t2-t1)
-    print("1700000 Concern RT inserted  en",s20,"sec")
-
-    s21=0
-    # Contains relationships (Order -> Contains -> Product, Seller)
-    for i in range(4*10**6):  # Each order contains products
-        product_id = random.randint(0, 9999)  # Random product
-        seller_id = random.randint(0, 4999)   # Random seller
-        contains_id = i                      # Unique Contains ID (1:1 with iteration for simplicity)
-        order_id = random.randint(0, 2000000-1) # Random order ID
-
-        # Create Contains_Order relationship (Order -> Contains)
-        query_order_contains = f"""
-        MATCH (o:Order {{oid: {order_id}}}), (c:Contains {{id: {i}}})
-        CREATE (o)-[:Contains_Order]->(c)
-        """
-        t1=tm.time()
-        session_base.run(query_order_contains)
-        session_indexed.run(query_order_contains)
-        session_query.run(query_order_contains)
-        session_indexed_query.run(query_order_contains)
-        # Create Contains_Product relationship (Contains -> Product)
-        query_contains_product = f"""
-        MATCH (c:Contains {{id: {i}}}), (p:Product {{reference: 'P{product_id}'}})
-        CREATE (c)-[:Contains_Product]->(p)
-        """
-        t1=tm.time()
-        session_base.run(query_contains_product)
-        session_indexed.run(query_contains_product)
-        session_query.run(query_contains_product)
-        session_indexed_query.run(query_contains_product)
-        # Create Contains_Seller relationship (Contains -> Seller)
-        query_contains_seller = f"""
-        MATCH (c:Contains {{id: {i}}}), (s:Seller {{seller_gov_id: 'gov_{seller_id}'}})
-        CREATE (c)-[:Contains_Seller]->(s)
-        """
-        session_base.run(query_contains_seller)
-        session_indexed.run(query_contains_seller)
-        session_query.run(query_contains_seller)
-        session_indexed_query.run(query_contains_seller)        
-        s21+=(t2-t1)
-    print("4M success RT of Contains with Contains_Order, Contains_Product and Contains_Seller en",s21,"sec")
-    # Next relationships
-    for client_id in range(1_000_000):
-        query_next = f"""
-        MATCH (c:Client {{login: 'client_{client_id}'}})-[:makes]->(o:Order)
+    # next between successive orders of the same client
+    for cid in range(1_000_000):
+        q_next = f"""
+        MATCH (c:Client {{login:'client_{cid}'}})-[:MAKES]->(o:Order)
         WITH o ORDER BY o.sequenceNumber
-        WITH collect(o) AS orders
-        UNWIND range(0, size(orders) - 2) AS idx
-        WITH orders[idx] AS current, orders[idx + 1] AS next
-        MERGE (current)-[:next]->(next)
+        WITH collect(o) AS ords
+        UNWIND range(0, size(ords)-2) AS i
+        WITH ords[i] AS current, ords[i+1] AS nxt
+        CREATE (current)-[:NEXT]->(nxt)
         """
-        session_query.run(query_next)
-        session_indexed_query.run(query_next)
-        
-    # Purchases relationships
-    query_purchases = f"""
-    MATCH (c:Client)-[:makes]->(o:Order)-[:Contains_Order]->(co:Contains)-[:Contains_Product]->(p:Product)-[:is_composed_of]->(cat:Category)
-    MERGE (c)-[:purchases]->(cat)
-    """
-    session_query.run(query_purchases)
-    session_indexed_query.run(query_purchases)
-    print("Relationships created successfully.")
-s=sum([eval("s"+str(i)) for i in range(1,22)])
-print("Graph databases created successfully in a total of",s,"seconds")
+        s1.run(q_next); s2.run(q_next); s3.run(q_next); s4.run(q_next); s5.run(q_next)
+
+    # has between Client and Address
+    for i in range(1_000_000):
+        aid = random.randint(0, 699_999)
+        q = f"""
+        MATCH (c:Client {{login:'client_{i}'}}), (a:Address {{addr_id:'addr_{aid}'}})
+        CREATE (c)-[:HAS]->(a)
+        """
+        s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
+    # containsOrder / containsProduct / containsSeller
+    for i in range(100_000):
+        oid = random.randint(0, 1_999_999)
+        pid = random.randint(0, 9_999)
+        sid = random.randint(0, 4_999)
+        q1 = f"""
+        MATCH (o:Order {{oid:{oid}}}), (co:Contains {{id:{i}}})
+        CREATE (o)-[:CONTAINS_Order]->(co)
+        """
+        q2 = f"""
+        MATCH (co:Contains {{id:{i}}}), (p:Product {{reference:'P{pid}'}})
+        CREATE (co)-[:CONTAINS_Product]->(p)
+        """
+        q3 = f"""
+        MATCH (co:Contains {{id:{i}}}), (s:Seller {{seller_gov_id:'gov_{sid}'}})
+        CREATE (co)-[:CONTAINS_Seller]->(s)
+        """
+        s1.run(q1); s2.run(q1); s3.run(q1); s4.run(q1); s5.run(q1)
+        s1.run(q2); s2.run(q2); s3.run(q2); s4.run(q2); s5.run(q2)
+        s1.run(q3); s2.run(q3); s3.run(q3); s4.run(q3); s5.run(q3)
+
+    # is-composed (Product → Category)
+    for i in range(10_000):
+        cid = random.randint(0, 99)
+        q = f"""
+        MATCH (p:Product {{reference:'P{i}'}}), (cat:Category {{code:'C{cid}'}})
+        CREATE (p)-[:IS_COMPOSED_OF]->(cat)
+        """
+        s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
+    # provides (Seller → Product)
+    for i in range(10_000):
+        sid = random.randint(0, 4_999)
+        in_stock = random.randint(10, 1000)
+        warranty = random.choice([1,3,6,12,24,60])
+        q_prov = f"""
+        MATCH (s:Seller {{seller_gov_id:'gov_{sid}'}}), (p:Product {{reference:'P{i}'}})
+        CREATE (s)-[:PROVIDES {{inStockQty:{in_stock}, warranty:{warranty}}}]->(p)
+        """
+        s1.run(q_prov); s2.run(q_prov); s3.run(q_prov)
+
+        # for query-driven DBs replace warranty by linking to Warranty nodes
+        q_warr = f"""
+        MATCH (s:Seller {{seller_gov_id:'gov_{sid}'}}),
+              (p:Product {{reference:'P{i}'}}),
+              (w:Warranty {{warranty:{warranty}}})
+        CREATE (s)-[:sellerWarranty]->(w),
+               (w)-[:productWarranty]->(p)
+        """
+        s4.run(q_warr); s5.run(q_warr)
+
+    # is-composed-2 (Payment → Order)
+    for i in range(1_500_000):
+        oid = random.randint(0, 1_999_999)
+        q = f"""
+        MATCH (p:Payment {{pm_number:{i}}}), (o:Order {{oid:{oid}}})
+        CREATE (p)-[:IS_COMPOSED_OF2]->(o)
+        """
+        s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
+    # uses (Payment → RemoteAccess)
+    for i in range(1_000_000):
+        rid = random.randint(0, 2_999_999)
+        q = f"""
+        MATCH (p:Payment {{pm_number:{i}}}), (r:RemoteAccess {{idAccess:{rid}}})
+        CREATE (p)-[:USES]->(r)
+        """
+        s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
+    # concern1 / concern2 (Payment → DebitCard or CreditCard)
+    for i in range(1_000_000):
+        if random.random() < 0.5:
+            did = random.randint(0, 199_999)
+            q = f"""
+            MATCH (p:Payment {{pm_number:{i}}}), (d:DebitCard)
+            WHERE d.card_number IS NOT NULL AND rand() < 0.0005
+            CREATE (p)-[:CONCERN1]->(d)
+            """
+        else:
+            cid = random.randint(0, 399_999)
+            q = f"""
+            MATCH (p:Payment {{pm_number:{i}}}), (c:CreditCard)
+            WHERE c.card_number IS NOT NULL AND rand() < 0.0005
+            CREATE (p)-[:CONCERN2]->(c)
+            """
+        s1.run(q); s2.run(q); s3.run(q); s4.run(q); s5.run(q)
+
 driver.close()
